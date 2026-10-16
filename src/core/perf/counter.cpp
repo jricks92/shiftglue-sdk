@@ -277,6 +277,9 @@ constexpr const char* kCounterNames[] = {
     "d3d_census_skipped_draws",
     "d3d_census_skipped_shader_loads",
     "d3d_census_skipped_constant_packets",
+    "generated_present_count",
+    "frame_generation_gpu_time_ns",
+    "frame_generation_skipped",
 };
 static_assert(std::size(kCounterNames) == kNumCounters, "kCounterNames must match CounterId enum");
 
@@ -422,6 +425,9 @@ constexpr bool kIsGauge[] = {
     false,  // kD3dCensusSkippedDraws
     false,  // kD3dCensusSkippedShaderLoads
     false,  // kD3dCensusSkippedConstantPackets
+    false,  // kGeneratedPresentCount
+    false,  // kFrameGenerationGpuTimeNs
+    false,  // kFrameGenerationSkipped
 };
 static_assert(std::size(kIsGauge) == kNumCounters, "kIsGauge must match CounterId enum");
 
