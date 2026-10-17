@@ -3340,6 +3340,7 @@ void Fh1NativeExecutor::OnSwap(uint64_t frame) {
   ReleaseRetiredImages(false);
   UpdateCoarseShading();
   GpuDrain();
+  if (config_.memory) config_.memory->BeginUploadFrame();
   frame_ = frame;
   if (frame % uint64_t(REXCVAR_GET(fh1_native_stats_frames)) == 0) LogStats(frame);
 }
@@ -3528,7 +3529,10 @@ void Fh1NativeExecutor::LogStats(uint64_t frame) {
     REXGPU_INFO("FH1 native executor (Vulkan) transfer tile-passes: {}", top);
     transfer_volume_.clear();
   }
-  const uint64_t window_frames = frame >= 600 ? 600 : std::max<uint64_t>(frame, 1);
+  // The per-frame rates below cover the frames since the previous stats line.
+  const uint64_t stats_interval = uint64_t(std::max<int32_t>(1, REXCVAR_GET(fh1_native_stats_frames)));
+  const uint64_t window_frames =
+      frame >= stats_interval ? stats_interval : std::max<uint64_t>(frame, 1);
   const auto causes = command_processor_.TakeFh1RenderingCauses();
   const double per_frame = 1.0 / double(window_frames);
   REXGPU_INFO(
@@ -3553,6 +3557,19 @@ void Fh1NativeExecutor::LogStats(uint64_t frame) {
   }
   if (!top.empty()) {
     REXGPU_INFO("FH1 native executor (Vulkan) renderings ended by other work, per frame: {}", top);
+  }
+  if (config_.memory) {
+    // Cumulative shared-memory uploads by kind, as the D3D12 executor logs
+    // them: requests that uploaded, page ranges and bytes.
+    using Kind = SharedMemory::UploadKind;
+    const auto stats = [this](Kind kind) {
+      const SharedMemory::UploadStats& s = config_.memory->upload_stats(kind);
+      return fmt::format("{}/{}/{:.1f}MB (repeat {:.1f}MB)", s.requests, s.ranges,
+                         double(s.bytes) / 1048576.0, double(s.repeat_bytes) / 1048576.0);
+    };
+    REXGPU_INFO("Shared memory uploads: vertex {} index {} texture {} memexport {} other {}",
+                stats(Kind::kVertex), stats(Kind::kIndex), stats(Kind::kTexture),
+                stats(Kind::kMemexport), stats(Kind::kOther));
   }
 }
 
