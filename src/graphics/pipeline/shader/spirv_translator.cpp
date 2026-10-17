@@ -57,7 +57,11 @@ REXCVAR_DEFINE_BOOL(spirv_ieee_vertex_math, REX_PLATFORM_ANDROID, "GPU",
 // with the NaN check the Thor's parked scene pass is 10.4 ms, as with the full
 // rule, against 10.0 ms with plain products. On macOS: an M4 Pro free-roam
 // drive's median frame falls from 10.9 to 8.6 ms (two runs each), brightness
-// and the image unchanged against Windows.
+// and the image unchanged against Windows. The cost on MoltenVK is its
+// SPIRV-Cross turning every NoContraction multiply and add into a
+// non-inlined [[clang::optnone]] helper call (398 of them in the largest
+// free-roam pixel shader): an Apple M1's drive frame falls from 53 to 28 ms
+// GPU with the decoration gone, the image unchanged on the fixed-clock route.
 REXCVAR_DEFINE_BOOL(spirv_fast_pixel_math, REX_PLATFORM_ANDROID || REX_PLATFORM_MAC, "GPU",
                     "Vulkan: in pixel shaders, apply the Direct3D 9 multiply rule (0 * anything "
                     "= 0) only to products that come out NaN, and let the driver fuse "
